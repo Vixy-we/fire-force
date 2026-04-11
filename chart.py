@@ -215,3 +215,46 @@ def add_state_points(fig, inlet, outlet, process_name, process_color, colors):
     ))
     
     return fig
+
+def add_journey_point(fig, inlet, outlet, progress, color, colors):
+    """
+    Adds a pulsed moving marker along the process path to simulate real-time journey.
+    progress: 0.0 to 1.0
+    """
+    # Linear interpolation for the point position
+    # (In psychrometrics, mixing/sensible follows straight lines on T-W chart)
+    curr_t = inlet["DBT"] + (outlet["DBT"] - inlet["DBT"]) * progress
+    curr_w = inlet["W"] + (outlet["W"] - inlet["W"]) * progress
+    
+    # Add a glowing point
+    fig.add_trace(go.Scatter(
+        x=[curr_t],
+        y=[curr_w],
+        mode="markers",
+        marker=dict(
+            color=color,
+            size=18,
+            symbol="circle",
+            line=dict(color="#FFFFFF", width=3),
+            opacity=0.8
+        ),
+        name="AHU Point",
+        hoverinfo="skip"
+    ))
+    
+    # Add a larger, faint pulse circle
+    fig.add_trace(go.Scatter(
+        x=[curr_t],
+        y=[curr_w],
+        mode="markers",
+        marker=dict(
+            color=color,
+            size=35,
+            symbol="circle",
+            opacity=0.2
+        ),
+        name="Pulse",
+        hoverinfo="skip"
+    ))
+    
+    return fig
