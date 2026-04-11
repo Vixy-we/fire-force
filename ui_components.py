@@ -119,6 +119,55 @@ def inject_css(colors):
     st.markdown(css, unsafe_allow_html=True)
 
 
+@st.dialog("📚 Rules, Formulas & Guide", width="large")
+def show_guide_dialog():
+    st.markdown("""
+### 🌡️ Inputs & Outputs
+
+**Inputs:**
+- **Inlet Air State**: Dry Bulb Temperature (DBT) in °C and Relative Humidity (RH) in % or Humidity Ratio/Wet Bulb depending on input mode.
+- **Process Parameters**: Target DBT, Target RH, Sensible Heat Gain, or Fresh Air Fraction (depending on the chosen psychrometric process).
+- **Atmospheric Pressure**: Fixed to Sea Level standard pressure ($101325\\text{ Pa}$) in this app.
+
+**Outputs:**
+- **Outlet Air State**: Computed DBT, WBT, RH, Humidity Ratio ($W$), Enthalpy ($h$), and Specific Volume ($v$).
+- **Process Summary**: Total Cooling/Heating Load (kJ/kg), Sensible/Latent Heat components, and Moisture Added/Removed (g/kg).
+
+---
+
+### 🧮 Core Formulas (ASHRAE Fundamentals)
+
+**1. Saturation Vapour Pressure ($P_{ws}$)**
+Using the Magnus-Tetens empirical approximation for water vapor over liquid water:
+$$ P_{ws} = 610.78 \\times \\exp\\left(\\frac{17.27 \\times T}{T + 237.3}\\right) $$
+*(Where T is DBT in °C, $P_{ws}$ is in Pa)*
+
+**2. Vapour Pressure ($P_w$) from Relative Humidity**
+$$ P_w = \\frac{\\text{RH}}{100} \\times P_{ws} $$
+
+**3. Humidity Ratio ($W$)**
+Using the ideal gas ratio of molecular weights for water vapour and dry air (0.621945):
+$$ W = 0.622 \\times \\frac{P_w}{P_{atm} - P_w} $$
+*(Result in kg water / kg dry air)*
+
+**4. Specific Enthalpy ($h$)**
+Combining sensible heat of air and latent heat of vaporisation:
+$$ h = 1.006 \\times T + W \\times (2501 + 1.86 \\times T) $$
+*(Result in kJ/kg of dry air)*
+
+**5. Specific Volume ($v$)**
+$$ v = \\frac{R_{da} \\times (T + 273.15)}{P_{atm} - P_w} $$
+*(Where $R_{da} = 287.042\\text{ J/(kg·K)}$)*
+
+---
+
+### 🔄 Process Analysis Principles
+
+- **Sensible Heating/Cooling**: Humidity ratio ($W$) stays constant. Enthalpy changes purely due to temperature: $\\Delta h \\approx 1.006 \\times \\Delta T$.
+- **Cooling & Dehumidification**: $W$ decreases as water condenses out of the air stream. The process involves both sensible heat (lowering temperature) and latent heat (condensing vapor). Latent Load is derived from $\\Delta W \\times h_{fg}$.
+- **Adiabatic Mixing**: Occurs in the mixing box of an Air Handling Unit (AHU). The mixed state is determined using the lever rule based on mass flow ratios; the resulting enthalpy and humidity ratio are linear mass-weighted averages of the two incoming airstreams.
+    """)
+
 def render_header(colors):
     """Renders the HTML-based header bar."""
     bg = colors["bg"]
@@ -127,33 +176,48 @@ def render_header(colors):
     card_bg = colors["card_bg"]
     border = colors["border"]
     shadow = colors["shadow"]
+    accent = colors["accent"]
 
-    html = (
-        "<div style='background-color: " + bg + "; width: 100%; padding: 12px 24px; "
-        "display: flex; justify-content: space-between; align-items: center;'>"
-        "  <div>"
-        "    <div style='font-family: Inter, sans-serif; font-weight: 700; font-size: 20px; "
-        "color: " + text_pri + "; letter-spacing: 2px; text-transform: uppercase;'>"
-        "PSYCHROMETRIC VISUALIZER</div>"
-        "    <div style='font-family: Inter, sans-serif; font-weight: 400; font-size: 11px; "
-        "color: " + text_sec + "; letter-spacing: 1px;'>"
-        "ASHRAE-Validated Interactive Analysis Tool</div>"
-        "  </div>"
-        "  <div style='display: flex; gap: 10px;'>"
-        "    <span style='background-color: " + card_bg + "; border: 1px solid " + border + "; "
-        "border-radius: 4px; padding: 4px 8px; font-size: 10px; color: " + text_sec + "; "
-        "font-family: JetBrains Mono, monospace; box-shadow: 0 1px 2px " + shadow + ";'>SI UNITS</span>"
-        "    <span style='background-color: " + card_bg + "; border: 1px solid " + border + "; "
-        "border-radius: 4px; padding: 4px 8px; font-size: 10px; color: " + text_sec + "; "
-        "font-family: JetBrains Mono, monospace; box-shadow: 0 1px 2px " + shadow + ";'>ASHRAE 2017</span>"
-        "    <span style='background-color: " + card_bg + "; border: 1px solid " + border + "; "
-        "border-radius: 4px; padding: 4px 8px; font-size: 10px; color: " + text_sec + "; "
-        "font-family: JetBrains Mono, monospace; box-shadow: 0 1px 2px " + shadow + ";'>PsychroLib v2</span>"
-        "  </div>"
-        "</div>"
-        "<hr style='margin: 0; padding: 0; border: none; height: 1px; background-color: " + border + ";'>"
-    )
-    st.markdown(html, unsafe_allow_html=True)
+    col1, col2 = st.columns([1.5, 1], vertical_alignment="center")
+    
+    with col1:
+        html_left = (
+            "<div style='background-color: transparent; width: 100%; padding: 12px 24px; "
+            "display: flex; justify-content: flex-start; align-items: center;'>"
+            "  <div>"
+            "    <div style='font-family: Inter, sans-serif; font-weight: 700; font-size: 20px; "
+            "color: " + text_pri + "; letter-spacing: 2px; text-transform: uppercase;'>"
+            "PSYCHROMETRIC VISUALIZER</div>"
+            "    <div style='font-family: Inter, sans-serif; font-weight: 400; font-size: 11px; "
+            "color: " + text_sec + "; letter-spacing: 1px;'>"
+            "ASHRAE-Validated Interactive Analysis Tool</div>"
+            "  </div>"
+            "</div>"
+        )
+        st.markdown(html_left, unsafe_allow_html=True)
+
+    with col2:
+        st.markdown(
+            "<div style='display: flex; gap: 10px; justify-content: flex-end; padding-top: 12px; margin-bottom: 5px;'>"
+            "  <span style='background-color: " + card_bg + "; border: 1px solid " + border + "; "
+            "border-radius: 4px; padding: 4px 8px; font-size: 10px; color: " + text_sec + "; "
+            "font-family: JetBrains Mono, monospace; box-shadow: 0 1px 2px " + shadow + ";'>SI UNITS</span>"
+            "  <span style='background-color: " + card_bg + "; border: 1px solid " + border + "; "
+            "border-radius: 4px; padding: 4px 8px; font-size: 10px; color: " + text_sec + "; "
+            "font-family: JetBrains Mono, monospace; box-shadow: 0 1px 2px " + shadow + ";'>ASHRAE 2017</span>"
+            "  <span style='background-color: " + card_bg + "; border: 1px solid " + border + "; "
+            "border-radius: 4px; padding: 4px 8px; font-size: 10px; color: " + text_sec + "; "
+            "font-family: JetBrains Mono, monospace; box-shadow: 0 1px 2px " + shadow + ";'>PsychroLib v2</span>"
+            "</div>",
+            unsafe_allow_html=True
+        )
+        
+        btn_col1, btn_col2 = st.columns([2, 1])
+        with btn_col2:
+            if st.button("📚 Guide & Formulas", key="guide_btn"):
+                show_guide_dialog()
+
+    st.markdown("<hr style='margin: 0; padding: 0; border: none; height: 1px; background-color: " + border + ";'>", unsafe_allow_html=True)
 
 
 def render_state_panel(state_dict, label, color, colors, delta_state=None, is_outlet=False):

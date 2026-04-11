@@ -896,12 +896,12 @@ if not st.session_state.sim_calculated:
     chart_slot.plotly_chart(
         empty_fig,
         width="stretch",
-        config={"displaylogo": False}
+        config={"displaylogo": False},
+        key="sim_chart_empty"
     )
 
-    schematic_slot.markdown(
-        build_schematic_svg(0, colors),
-        unsafe_allow_html=True
+    schematic_slot.html(
+        build_schematic_svg(0, colors)
     )
 
     # Empty stage cards
@@ -928,9 +928,8 @@ if st.session_state.sim_running and st.session_state.sim_stages:
         st.session_state.sim_current_idx = stage_idx
 
         # Update schematic
-        schematic_slot.markdown(
-            build_schematic_svg(stage_idx, colors),
-            unsafe_allow_html=True
+        schematic_slot.html(
+            build_schematic_svg(stage_idx, colors)
         )
 
         # Update stage cards
@@ -944,7 +943,8 @@ if st.session_state.sim_running and st.session_state.sim_stages:
         chart_slot.plotly_chart(
             fig,
             width="stretch",
-            config={"displaylogo": False, "displayModeBar": True}
+            config={"displaylogo": False, "displayModeBar": True},
+            key=f"sim_chart_stage_{stage_idx}"
         )
 
         time.sleep(step_delay)
@@ -958,9 +958,8 @@ if st.session_state.sim_running and st.session_state.sim_stages:
     )
 
     # Final render stays on screen — no rerun
-    schematic_slot.markdown(
-        build_schematic_svg(len(AHU_STAGES) - 1, colors),
-        unsafe_allow_html=True
+    schematic_slot.html(
+        build_schematic_svg(len(AHU_STAGES) - 1, colors)
     )
     render_stage_cards(len(AHU_STAGES) - 1)
     render_energy_panels(energy, len(AHU_STAGES))
@@ -971,5 +970,7 @@ if st.session_state.sim_running and st.session_state.sim_stages:
     chart_slot.plotly_chart(
         final_fig,
         width="stretch",
-        config={"displaylogo": False, "displayModeBar": True}
+        config={"displaylogo": False, "displayModeBar": True},
+        key="sim_chart_final"
     )
+

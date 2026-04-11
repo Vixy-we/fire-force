@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Manim
+media/
+*.svg
+*.tex
+*.mp4
+manim_input.json
+
+# Streamlit/Misc
+.venv/
+env/
+.env
+.streamlit/ secrets.toml
