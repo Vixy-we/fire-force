@@ -29,7 +29,7 @@ if "animate_journey" not in st.session_state:
 
 # Theme Configuration
 with st.sidebar:
-    st.session_state.dark_mode = st.toggle("🌙 Dark Mode", value=st.session_state.dark_mode)
+    st.session_state.dark_mode = ui_components.render_theme_toggle()
 
 theme_colors = ui_components.get_theme_colors(st.session_state.dark_mode)
 

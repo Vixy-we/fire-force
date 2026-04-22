@@ -6,6 +6,25 @@ Renders UI components and contains global CSS injection logic.
 import streamlit as st
 
 
+def render_theme_toggle():
+    """Renders the dark mode toggle in the sidebar, always visible."""
+    if "dark_mode" not in st.session_state:
+        st.session_state.dark_mode = True
+    
+    # Consistent label
+    colors = get_theme_colors(st.session_state.dark_mode)
+    st.markdown(
+        f"<div style='font-family:Inter,sans-serif; font-size:11px; "
+        f"color:{colors['text_secondary']}; "
+        f"letter-spacing:1px; margin-bottom:4px;'>GLOBAL THEME</div>",
+        unsafe_allow_html=True
+    )
+    
+    result = st.toggle("🌙 Dark Mode", value=st.session_state.dark_mode, key="dark_mode_toggle")
+    st.session_state.dark_mode = result
+    return result
+
+
 def get_theme_colors(is_dark):
     """Return a color palette dict for the chosen theme mode."""
     if is_dark:
@@ -53,6 +72,9 @@ def inject_css(colors):
 
     css = f"""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap');
+
+    /* ── Layout ────────────────────────────────────────────────────── */
     .block-container {{
         padding-top: 0rem;
         padding-bottom: 2rem;
@@ -64,13 +86,69 @@ def inject_css(colors):
         background-color: {bg};
         font-family: 'Inter', sans-serif;
     }}
-    section[data-testid="stSidebar"] {{
+
+    /* ── Advanced Sidebar Reordering ──────────────────────────────── */
+    /* Goal: 1. Toggle, 2. Nav Links, 3. Other Sidebar Content */
+    
+    [data-testid="stSidebar"] > div:first-child {{
+        display: flex !important;
+        flex-direction: column !important;
+    }}
+
+    /* Make the content container transparent to layout */
+    [data-testid="stSidebarContent"] {{
+        display: contents !important;
+    }}
+
+    /* The first two elements are the "GLOBAL THEME" label and the toggle */
+    [data-testid="stSidebarContent"] > div:nth-child(1),
+    [data-testid="stSidebarContent"] > div:nth-child(2) {{
+        order: 1 !important;
+    }}
+
+    /* The Nav links (App/Simulation) go in the middle */
+    [data-testid="stSidebarNav"] {{
+        order: 2 !important;
+        background-color: transparent !important;
+    }}
+
+    /* All other widgets (n+3) go to the bottom */
+    [data-testid="stSidebarContent"] > div:nth-child(n+3) {{
+        order: 3 !important;
+    }}
+
+    /* ── Sidebar background & nav link colors ─────────────────────── */
+    [data-testid="stSidebar"] {{
         background-color: {sidebar_bg};
         border-right: 1px solid {border};
     }}
+    /* Nav link text */
+    [data-testid="stSidebarNav"] a,
+    [data-testid="stSidebarNav"] a span {{
+        color: {text_pri} !important;
+    }}
+    /* Sidebar section-label stMarkdown — but DON'T use !important so
+       inline-styled value-display divs can keep their accent colors */
+    [data-testid="stSidebar"] .stMarkdown p {{
+        color: {text_pri};
+    }}
+    /* Widget labels (slider, checkbox, toggle labels) */
+    [data-testid="stSidebar"] [data-testid="stWidgetLabel"] p,
+    [data-testid="stSidebar"] [data-testid="stWidgetLabel"] label,
+    .stSelectbox label, .stSlider label,
+    .stCheckbox label span, .stToggle label span,
+    [data-testid="stWidgetLabel"] p {{
+        color: {text_sec} !important;
+        font-size: 12px !important;
+        font-family: 'Inter', sans-serif;
+    }}
+
+    /* ── Header ───────────────────────────────────────────────────── */
     header[data-testid="stHeader"] {{
         background-color: transparent !important;
     }}
+
+    /* ── Metric cards ─────────────────────────────────────────────── */
     div[data-testid="stMetric"] {{
         background-color: {card_bg};
         border-radius: 8px;
@@ -92,6 +170,8 @@ def inject_css(colors):
         font-size: 18px !important;
         font-weight: 600;
     }}
+
+    /* ── Buttons ──────────────────────────────────────────────────── */
     .stButton > button {{
         background-color: {accent} !important;
         color: #ffffff !important;
@@ -101,19 +181,75 @@ def inject_css(colors):
         width: 100%;
         margin-top: 10px;
     }}
-    .stSelectbox label, .stSlider label, .stCheckbox label span, .stToggle label span {{
-        color: {text_sec} !important;
+
+    /* ── Sliders — ALWAYS show value and min/max labels ──────────── */
+    /* Override EVERY div inside the slider to force opacity visible.
+       Streamlit/BaseWeb uses dynamically generated class names with
+       opacity:0 that only become opacity:1 on hover. We kill that. */
+    [data-testid="stSlider"] div {{
+        opacity: 1 !important;
+        visibility: visible !important;
+    }}
+    /* Color the thumb value (current value above the knob) */
+    [data-testid="stThumbValue"] {{
+        color: {accent} !important;
+        font-family: 'JetBrains Mono', monospace !important;
         font-size: 12px !important;
-        font-family: 'Inter', sans-serif;
+        font-weight: 600 !important;
     }}
-    .stSlider label {{
-        letter-spacing: 0.5px;
-        text-transform: uppercase;
+    /* Color min/max tick labels — use primary color for maximum readability */
+    [data-testid="stTickBar"] div,
+    [data-testid="stTickBar"] span,
+    [data-testid="stTickBar"] p {{
+        color: {text_pri} !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        font-family: 'JetBrains Mono', monospace !important;
+        font-size: 11px !important;
+        font-weight: 600 !important;
     }}
+    /* Specifically target the min and max labels by their unique testids */
+    [data-testid="stTickBarMin"],
+    [data-testid="stTickBarMax"] {{
+        color: {text_pri} !important;
+        opacity: 1 !important;
+    }}
+
+    /* ── Dialog / Popup ───────────────────────────────────────────── */
+    /* Target every possible Streamlit dialog wrapper */
+    div[data-testid="stDialog"],
+    div[data-testid="stDialog"] > div,
+    div[data-testid="stDialog"] > div > div {{
+        background-color: {bg} !important;
+    }}
+    /* All text inside dialog */
+    div[data-testid="stDialog"] *:not(code):not(pre) {{
+        color: {text_pri} !important;
+    }}
+    /* Also target by role */
+    div[role="dialog"],
+    div[role="dialog"] > div {{
+        background-color: {bg} !important;
+        color: {text_pri} !important;
+    }}
+    div[role="dialog"] p,
+    div[role="dialog"] h1,
+    div[role="dialog"] h2,
+    div[role="dialog"] h3,
+    div[role="dialog"] li,
+    div[role="dialog"] span:not([class*="katex"]) {{
+        color: {text_pri} !important;
+    }}
+    /* KaTeX math should remain visible */
+    div[role="dialog"] .katex,
+    div[role="dialog"] .katex * {{
+        color: {text_pri} !important;
+    }}
+
+    /* ── Misc ─────────────────────────────────────────────────────── */
     #MainMenu {{visibility: hidden;}}
     .stAppDeployButton {{display: none;}}
     footer {{visibility: hidden;}}
-    @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap');
     </style>
     """
     st.markdown(css, unsafe_allow_html=True)
@@ -137,6 +273,8 @@ def show_guide_dialog():
 
 ### 🧮 Core Formulas (ASHRAE Fundamentals)
 
+*All psychrometric property calculations in this application use PsychroLib, a scientifically validated library implementing ASHRAE Handbook of Fundamentals (2017) equations. The formulas shown below are the governing relations these calculations are based on.*
+
 **1. Saturation Vapour Pressure ($P_{ws}$)**
 Using the Magnus-Tetens empirical approximation for water vapor over liquid water:
 $$ P_{ws} = 610.78 \\times \\exp\\left(\\frac{17.27 \\times T}{T + 237.3}\\right) $$
@@ -157,15 +295,49 @@ $$ h = 1.006 \\times T + W \\times (2501 + 1.86 \\times T) $$
 
 **5. Specific Volume ($v$)**
 $$ v = \\frac{R_{da} \\times (T + 273.15)}{P_{atm} - P_w} $$
-*(Where $R_{da} = 287.042\\text{ J/(kg·K)}$)*
+*(Where $R_{da} = 287.042$ J/(kg·K))*
+
+**6. Wet Bulb Temperature ($T_{wb}$)**
+Solved iteratively from the psychrometric wet bulb equation:
+$$ W = W_{sat,WBT} - \\frac{c_{pa}(T - T_{wb})}{h_{fg,WBT}} $$
+*(Where $W_{sat,WBT}$ is the humidity ratio at saturation at WBT, and $h_{fg,WBT}$ is the latent heat at that temperature)*
+
+**7. Dew Point Temperature ($T_{dp}$)**
+$$ T_{dp} = \\frac{243.04 \\times \\ln(P_w / 611.2)}{17.625 - \\ln(P_w / 611.2)} $$
 
 ---
 
 ### 🔄 Process Analysis Principles
 
-- **Sensible Heating/Cooling**: Humidity ratio ($W$) stays constant. Enthalpy changes purely due to temperature: $\\Delta h \\approx 1.006 \\times \\Delta T$.
-- **Cooling & Dehumidification**: $W$ decreases as water condenses out of the air stream. The process involves both sensible heat (lowering temperature) and latent heat (condensing vapor). Latent Load is derived from $\\Delta W \\times h_{fg}$.
-- **Adiabatic Mixing**: Occurs in the mixing box of an Air Handling Unit (AHU). The mixed state is determined using the lever rule based on mass flow ratios; the resulting enthalpy and humidity ratio are linear mass-weighted averages of the two incoming airstreams.
+**Sensible Heat Factor (SHF)**
+Represents the ratio of sensible to total cooling load:
+$$ SHF = \\frac{Q_{sensible}}{Q_{total}} = \\frac{1.006 \\times \\Delta T}{1.006 \\times \\Delta T + \\Delta W \\times 2501} $$
+
+**Apparatus Dew Point (ADP) & Bypass Factor**
+For cooling and dehumidification, ADP represents the effective coil surface temperature:
+$$ ADP = T_{coil} \\approx T_{outlet} - BF \\times (T_{inlet} - T_{outlet}) $$
+*(Where Bypass Factor $BF$ represents the fraction of air that bypasses the coil without contacting it)*
+
+**Adiabatic Mixing**
+The mixed state is determined by conservation of mass and energy:
+$$ W_{mix} = \\frac{\\dot{m}_1 W_1 + \\dot{m}_2 W_2}{\\dot{m}_1 + \\dot{m}_2} $$
+$$ h_{mix} = \\frac{\\dot{m}_1 h_1 + \\dot{m}_2 h_2}{\\dot{m}_1 + \\dot{m}_2} $$
+$$ T_{mix} = \\frac{h_{mix} - 2501 \\times W_{mix}}{1.006 + 1.86 \\times W_{mix}} $$
+
+**Evaporative Cooling**
+This process follows a constant Wet Bulb Temperature ($T_{wb}$) line on the psychrometric chart. Driven by saturation efficiency:
+$$ \\eta_{sat} = \\frac{T_{in} - T_{out}}{T_{in} - T_{wb,in}} \\times 100\\% $$
+
+---
+
+### 📦 Core Engineering Stack
+
+Our platform leverages industry-standard data and engineering libraries:
+- **`psychrolib`**: The core calculation engine, directly implementing the ASHRAE Handbook Fundamentals algorithms for precise psychrometric properties.
+- **`numpy`**: Provides fast, vectorized array operations for generating the non-linear saturation curves and thermodynamic bounds.
+- **`pandas`**: Structures simulation sequences and tabular data for reports.
+- **`plotly`**: Renders the high-performance, interactive, layered psychrometric SVG charts.
+- **`streamlit`**: Powers the dynamic web interface, real-time reactive state, and Neo-Brutalist/Glassmorphic component updates.
     """)
 
 def render_header(colors):

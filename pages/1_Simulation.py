@@ -15,7 +15,7 @@ import psychrolib
 # Import from existing project modules
 from psychro_calc import calculate_state, validate_state, P_ATM
 from chart import build_psychro_chart
-from ui_components import get_theme_colors, inject_css, render_header
+from ui_components import get_theme_colors, inject_css, render_header, render_theme_toggle
 
 # ─── PsychroLib init ────────────────────────────────────────────────────────
 psychrolib.SetUnitSystem(psychrolib.SI)
@@ -75,71 +75,77 @@ st.set_page_config(
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = True
 
+# ─── Theme toggle at top of sidebar ─────────────────────────────────────────
+with st.sidebar:
+    st.session_state.dark_mode = render_theme_toggle()
+
 colors = get_theme_colors(st.session_state.get("dark_mode", True))
 inject_css(colors)
 render_header(colors)
 
 # ─── Extra simulation-specific CSS ──────────────────────────────────────────
-st.markdown("""
+st.markdown(f"""
 <style>
-.stage-card {
-    background: #1E2530;
+.stage-card {{
+    background: {colors['card_bg']};
     border-radius: 10px;
     padding: 14px 16px;
     margin-bottom: 10px;
-    border-left: 4px solid #2A3140;
+    border-left: 4px solid {colors['border']};
     transition: all 0.3s ease;
-}
-.stage-card.active {
-    border-left: 4px solid #00C9FF;
-    background: #1A2535;
-}
-.stage-card.complete {
+    box-shadow: 0 4px 6px {colors['shadow']};
+}}
+.stage-card.active {{
+    border-left: 4px solid {colors['accent']};
+    background: {colors['bg']};
+}}
+.stage-card.complete {{
     border-left: 4px solid #00E676;
     opacity: 0.75;
-}
-.stage-label {
+}}
+.stage-label {{
     font-family: 'Inter', sans-serif;
     font-size: 13px;
     font-weight: 600;
-    color: #E8EAF0;
+    color: {colors['text_primary']};
     margin-bottom: 4px;
-}
-.stage-desc {
+}}
+.stage-desc {{
     font-family: 'Inter', sans-serif;
     font-size: 11px;
-    color: #8B95A5;
+    color: {colors['text_secondary']};
     line-height: 1.5;
-}
-.stage-values {
+}}
+.stage-values {{
     font-family: 'JetBrains Mono', monospace;
     font-size: 11px;
-    color: #00C9FF;
+    color: {colors['accent']};
     margin-top: 6px;
-}
-.sim-badge {
+}}
+.sim-badge {{
     display: inline-block;
-    background: #1E2530;
-    border: 1px solid #2A3140;
+    background: {colors['card_bg']};
+    border: 1px solid {colors['border']};
     border-radius: 4px;
     padding: 3px 8px;
     font-family: 'JetBrains Mono', monospace;
     font-size: 10px;
-    color: #8B95A5;
+    color: {colors['text_secondary']};
     margin-right: 6px;
-}
-.energy-bar-label {
+}}
+.energy-bar-label {{
     font-family: 'JetBrains Mono', monospace;
     font-size: 11px;
-    color: #8B95A5;
-}
-.schematic-container {
-    background: #1E2530;
+    color: {colors['text_secondary']};
+}}
+.schematic-container {{
+    background: {colors['card_bg']};
     border-radius: 10px;
     padding: 16px;
-    border: 1px solid #2A3140;
+    border: 1px solid {colors['border']};
     margin-bottom: 16px;
-}
+    box-shadow: 0 4px 6px {colors['shadow']};
+}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -410,10 +416,10 @@ def build_schematic_svg(current_stage_idx, clrs):
     supply_c = comp_color("supply")
 
     svg = f"""
-    <div style="background:#1E2530; border-radius:10px; padding:16px;
-                border:1px solid #2A3140; margin-bottom:16px;">
+    <div style="background:{clrs['card_bg']}; border-radius:10px; padding:16px;
+                border:1px solid {clrs['border']}; margin-bottom:16px;">
       <div style="font-family:'Inter',sans-serif; font-size:11px;
-                  color:#8B95A5; letter-spacing:1px; margin-bottom:12px;">
+                  color:{clrs['text_secondary']}; letter-spacing:1px; margin-bottom:12px;">
         AHU SCHEMATIC — LIVE STAGE TRACKING
       </div>
       <svg viewBox="0 0 700 120" xmlns="http://www.w3.org/2000/svg"
@@ -539,21 +545,21 @@ if "sim_calculated" not in st.session_state:
 # ════════════════════════════════════════════════════════════════════════════
 
 with st.sidebar:
-    st.markdown("""
+    st.markdown(f"""
     <div style='font-family:Inter,sans-serif; font-size:11px;
-                color:#8B95A5; letter-spacing:1px; margin-bottom:4px;'>
+                color:{colors['text_secondary']}; letter-spacing:1px; margin-bottom:4px;'>
         AHU JOURNEY SIMULATION
     </div>
     <div style='font-family:Inter,sans-serif; font-size:10px;
-                color:#2A3140; margin-bottom:16px;'>
+                color:{colors['border']}; margin-bottom:16px;'>
         ────────────────────────
     </div>
     """, unsafe_allow_html=True)
 
     # ── Outdoor air ─────────────────────────────────────────────────────────
-    st.markdown("""
+    st.markdown(f"""
     <div style='font-family:Inter,sans-serif; font-size:11px;
-                color:#8B95A5; letter-spacing:1px; margin-bottom:8px;'>
+                color:{colors['text_secondary']}; letter-spacing:1px; margin-bottom:8px;'>
         🌤️ OUTDOOR AIR STATE
     </div>
     """, unsafe_allow_html=True)
@@ -583,9 +589,9 @@ with st.sidebar:
     st.markdown("<hr style='border-color:#2A3140;'>", unsafe_allow_html=True)
 
     # ── Return air ──────────────────────────────────────────────────────────
-    st.markdown("""
+    st.markdown(f"""
     <div style='font-family:Inter,sans-serif; font-size:11px;
-                color:#8B95A5; letter-spacing:1px; margin-bottom:8px;'>
+                color:{colors['text_secondary']}; letter-spacing:1px; margin-bottom:8px;'>
         🔁 RETURN AIR STATE
     </div>
     """, unsafe_allow_html=True)
@@ -602,9 +608,9 @@ with st.sidebar:
     st.markdown("<hr style='border-color:#2A3140;'>", unsafe_allow_html=True)
 
     # ── Mixing ratio ────────────────────────────────────────────────────────
-    st.markdown("""
+    st.markdown(f"""
     <div style='font-family:Inter,sans-serif; font-size:11px;
-                color:#8B95A5; letter-spacing:1px; margin-bottom:8px;'>
+                color:{colors['text_secondary']}; letter-spacing:1px; margin-bottom:8px;'>
         🔀 MIXING BOX
     </div>
     """, unsafe_allow_html=True)
@@ -687,9 +693,9 @@ with st.sidebar:
         )
 
     st.markdown(
-        "<div style='font-family:JetBrains Mono,monospace; "
-        "font-size:10px; color:#8B95A5; text-align:center; "
-        "margin-top:8px;'>AHU Journey · PsychroLib SI</div>",
+        f"<div style='font-family:JetBrains Mono,monospace; "
+        f"font-size:10px; color:{colors['text_secondary']}; text-align:center; "
+        f"margin-top:8px;'>AHU Journey · PsychroLib SI</div>",
         unsafe_allow_html=True
     )
 
@@ -699,19 +705,19 @@ with st.sidebar:
 # ════════════════════════════════════════════════════════════════════════════
 
 # ── Page title ───────────────────────────────────────────────────────────────
-st.markdown("""
+st.markdown(f"""
 <div style='margin-bottom:8px;'>
   <span style='font-family:Inter,sans-serif; font-weight:700;
-               font-size:22px; color:#E8EAF0; letter-spacing:1px;'>
+               font-size:22px; color:{colors["text_primary"]}; letter-spacing:1px;'>
     AHU JOURNEY
   </span>
   <span style='font-family:Inter,sans-serif; font-size:13px;
-               color:#8B95A5; margin-left:12px;'>
+               color:{colors["text_secondary"]}; margin-left:12px;'>
     Air Handling Unit — Psychrometric State Evolution
   </span>
 </div>
 <div style='font-family:Inter,sans-serif; font-size:12px;
-            color:#8B95A5; margin-bottom:20px; line-height:1.6;'>
+            color:{colors["text_secondary"]}; margin-bottom:20px; line-height:1.6;'>
   Watch outdoor air transform as it moves through each AHU stage.
   Each point on the chart represents the air state at that equipment stage.
   The trail shows the thermodynamic path taken.
@@ -801,7 +807,7 @@ def render_stage_cards(current_idx):
         else:
             status_class = ""
             icon = "○"
-            icon_color = "#2A3140"
+            icon_color = colors["border"]
 
         state = st.session_state.sim_stages.get(stage_def["id"]) \
             if st.session_state.sim_stages else None
@@ -816,7 +822,7 @@ def render_stage_cards(current_idx):
                 f"</div>"
             )
 
-        border_color = stage_def["color"] if i <= current_idx else "#2A3140"
+        border_color = stage_def["color"] if i <= current_idx else colors["border"]
         stage_slots[i].markdown(f"""
         <div class='stage-card {status_class}'
              style='border-left-color:{border_color};'>
@@ -835,9 +841,9 @@ def render_energy_panels(energy, current_idx):
     if not energy or current_idx < 2:
         for slot in energy_slots:
             slot.markdown(
-                "<div style='font-family:JetBrains Mono,monospace; "
-                "font-size:11px; color:#2A3140; padding:12px;'>"
-                "— awaiting simulation —</div>",
+                f"<div style='font-family:JetBrains Mono,monospace; "
+                f"font-size:11px; color:{colors['text_secondary']}; padding:12px;'>"
+                "\u2014 awaiting simulation \u2014</div>",
                 unsafe_allow_html=True
             )
         return
@@ -859,10 +865,10 @@ def render_energy_panels(energy, current_idx):
 
     for slot, (label, value, color) in zip(energy_slots, panels):
         slot.markdown(f"""
-        <div style='background:#1E2530; border-radius:8px; padding:14px;
-                    border-left:3px solid {color};'>
+        <div style='background:{colors["card_bg"]}; border-radius:8px; padding:14px;
+                    border-left:3px solid {color}; box-shadow: 0 4px 6px {colors["shadow"]};'>
           <div style='font-family:Inter,sans-serif; font-size:10px;
-                      color:#8B95A5; letter-spacing:1px;
+                      color:{colors["text_secondary"]}; letter-spacing:1px;
                       margin-bottom:6px;'>{label}</div>
           <div style='font-family:JetBrains Mono,monospace; font-size:20px;
                       font-weight:700; color:{color};'>{value}</div>
@@ -886,9 +892,10 @@ if not st.session_state.sim_calculated:
         x=35, y=0.022,
         text="Configure inputs and press ▶ RUN to start simulation",
         showarrow=False,
-        font=dict(color="#8B95A5", size=12, family="Inter"),
-        bgcolor="rgba(30,37,48,0.8)",
-        bordercolor="#2A3140",
+        font=dict(color=colors["text_secondary"], size=12, family="Inter"),
+        bgcolor=colors["card_bg"],
+        opacity=0.9,
+        bordercolor=colors["border"],
         borderwidth=1,
         borderpad=8,
     )
@@ -909,7 +916,7 @@ if not st.session_state.sim_calculated:
         stage_slots[i].markdown(f"""
         <div class='stage-card'>
           <div class='stage-label'>
-            <span style='color:#2A3140; margin-right:6px;'>○</span>
+            <span style='color:{colors["border"]}; margin-right:6px;'>○</span>
             {stage_def['label']}
           </div>
           <div class='stage-desc'>{stage_def['description']}</div>
